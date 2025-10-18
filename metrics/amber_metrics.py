@@ -97,8 +97,9 @@ class AmberMetricParser(MetricParser):
         for i in tqdm(range(len(inference_data))):
             
             id = inference_data[i]['id']
+            offset_id = id - 1
             response = self.parse_response(inference_data[i]['response'])
-            if ground_truth[id]['type'] == 'generative':
+            if ground_truth[offset_id]['type'] == 'generative':
                 nouns = self.extract_nouns(response)
                 after_process_nouns = []
                 for noun in nouns:
@@ -107,23 +108,23 @@ class AmberMetricParser(MetricParser):
                 
                 safe_words = []
                 safe_list = []
-                for idx, word in enumerate(ground_truth[id]['truth']):
+                for idx, word in enumerate(ground_truth[offset_id]['truth']):
                     safe_words += self.associations[word]
                     safe_list += [idx] * len(self.associations[word])
                     
                 ha_words = []
                 ha_list = []
-                for idx, word in enumerate(ground_truth[id]['hallu']):
+                for idx, word in enumerate(ground_truth[offset_id]['hallu']):
                     ha_words += self.associations[word]
                     ha_list += [idx] * len(self.associations[word])
                 
-                safe_words += ground_truth[id]['truth']
-                safe_len = len(ground_truth[id]['truth'])
+                safe_words += ground_truth[offset_id]['truth']
+                safe_len = len(ground_truth[offset_id]['truth'])
                 safe_list += [0] * safe_len
                 safe_flag_list = [0] * len(after_process_nouns)
                 
-                ha_words += ground_truth[id]['hallu']
-                ha_len = len(ground_truth[id]['hallu'])
+                ha_words += ground_truth[offset_id]['hallu']
+                ha_len = len(ground_truth[offset_id]['hallu'])
                 ha_list += [0] * ha_len
                 
                 for idx, noun in enumerate(after_process_nouns):
@@ -183,7 +184,7 @@ class AmberMetricParser(MetricParser):
             
             else:
                 self.metrics['qa_num'] += 1
-                truth = ground_truth[id]['truth']
+                truth = ground_truth[offset_id]['truth']
                 response = response
                 if truth == 'yes':
                     if response == 'Yes':

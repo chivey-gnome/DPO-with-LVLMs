@@ -77,7 +77,7 @@ class AmberEvaluator(Evaluator):
         print(f"Saved inferences to {out_file}")
         print("Benchmark: AMBER done.")
         # Could do this in memory, but use artifacts on disk for now
-        return (query_file, out_file)
+        return (self.query_path, out_file)
 
 
 

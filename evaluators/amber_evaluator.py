@@ -8,9 +8,8 @@ import torch
 
 class AmberEvaluator(Evaluator):
     def __init__(self, args):
-        self.data_path = os.path.join(args.amber_path, "data")
-        self.image_path = os.path.join(self.data_path, "image")
-        self.query_path = os.path.join(self.data_path, "query", f"query_{args.amber_set_name}.json")
+        self.image_path = os.path.join(args.amber_path, "image")
+        self.query_path = os.path.join(args.amber_path, "query", f"query_{args.amber_set_name}.json")
         self.output_dir=args.output_dir
         self.output_size = args.token_output_size
         self.BINOMIAL_ANSWER_ID=1005

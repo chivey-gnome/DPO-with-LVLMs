@@ -52,10 +52,9 @@ class AmberMetricParser(MetricParser):
 
     def __init__(self, args):
         self.nlp = spacy.load("en_core_web_lg")
-        self.data_path = os.path.join(args.amber_path, "data")
-        association_file = os.path.join(self.data_path, "relation.json")
-        safewords_file = os.path.join(self.data_path, "safe_words.txt")
-        self.annotations_file = os.path.join(self.data_path, "annotations.json")
+        association_file = os.path.join(args.amber_path, "relation.json")
+        safewords_file = os.path.join(args.amber_path, "safe_words.txt")
+        self.annotations_file = os.path.join(args.amber_path, "annotations.json")
         self.sim_score = args.sim_score
         # parse word associations
         self.associations = json.load(open(association_file, 'r', encoding='utf-8'))

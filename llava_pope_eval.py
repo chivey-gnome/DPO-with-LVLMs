@@ -64,7 +64,7 @@ if __name__ == "__main__":
     parser.add_argument("--set_name", type=str, default="random", choices=["random", "popular", "adv"],
                         help="Which POPE split to evaluate")
     parser.add_argument("--sim_score", type=float, default=0.8)
-    parser.add_argument("--amber_path", type=str, help="Path to AMBER data" default="data/AMBER")
+    parser.add_argument("--amber_path", type=str, help="Path to AMBER data", default="data/AMBER")
     parser.add_argument("--token_output_size", type=int, help="The size of the output, default to 512", default=512)
     parser.add_argument("--amber_set_name", type=str, default="all", choices=["all", "discriminative", "generative"])
     args = parser.parse_args()

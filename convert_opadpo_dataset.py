@@ -23,15 +23,15 @@ def main(args):
                 image_file.write(img)
             id += 1
             try:
-                line = {"image": s, "question": elem["query"], "chosen": elem["AI_json_report"]["image description"], "rejected": elem["original_generate_response"]}
+                line = {"image": s, "question": elem["query"], "chosen": elem["AI_json_report"]["image description"], "rejected": elem["original_generate_response"], "image_data": elem["image_bytes"]}
             except KeyError:
-                line = {"image": s, "question": elem["query"], "chosen": elem["AI_json_report"]["image_description"], "rejected": elem["original_generate_response"]}
+                line = {"image": s, "question": elem["query"], "chosen": elem["AI_json_report"]["image_description"], "rejected": elem["original_generate_response"], "image_data": elem["image_bytes"]}
             except TypeError:
-                 line = {"image": s, "question": elem["query"], "chosen": elem["AI_generate_response"], "rejected": elem["standard_response"]}
+                 line = {"image": s, "question": elem["query"], "chosen": elem["AI_generate_response"], "rejected": elem["standard_response"], "image_data": elem["image_bytes"]}
             out.append(line)
 
     dataset = Dataset.from_list(out)
-    dataset.save_to_disk("opa/OPA", max_shard_size="10MB")
+    dataset.save_to_disk("opa/OPA")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

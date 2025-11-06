@@ -48,7 +48,10 @@ class AmberMetricParser(MetricParser):
         # inference file contains whole chat - prompt, response and tags.
         # Remove these for purposes of AMBER benchmarking 
         responses = text.split("Assistant: ")
-        return responses[1]
+        if len(responses) >= 2:
+            return responses[1]
+        else:
+            return ""
 
     def __init__(self, args):
         self.nlp = spacy.load("en_core_web_lg")

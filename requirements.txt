@@ -20,5 +20,6 @@ tqdm==4.67.1
 transformers @ git+https://github.com/huggingface/transformers@6eb32558424c6a461252769f7aca3b3de834912b
 triton==3.3.1
 trl==0.23.1
-
-
+spacy==3.7.5
+nltk==3.8.1
+gdown==5.2.0

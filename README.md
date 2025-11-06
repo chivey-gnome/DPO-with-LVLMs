@@ -18,6 +18,7 @@ This repository contains scripts for **fine-tuning LLaVA models using DPO** and 
     - [Key Configuration](#key-configuration-1)
   - [Performance on POPE Benchmark](#performance-on-pope-benchmark)
     - [Run Evaluation](#run-evaluation-1)
+  - [Evaluating on AMBER Benchmark](#evaluating-on-amber-benchmark)
   - [Possible Changes](#possible-changes)
 
 ---
@@ -114,6 +115,14 @@ python evaluate.py
 ```
 - Make sure to set the correct paths for `ans_file` (`results` folder) and `label_file` (`POPE/Version_1` folder) in `evaluate.py`.
 
+## Evaluating on AMBER Benchmark
+
+First you must run the `amber_setup.sh` script to properly pull the annotations and image data.  This will also install certain python packages required for the AMBER evaluation. All necessary files
+will be downloaded to `data/AMBER`
+
+Use `llava_pope_eval.py` with argument --amber with the relevant model to exercise the entire benchmark
+on the model. Please use the help command of this script for documentation of arguments for running sub
+portions of the script.
 
 ## Possible Changes
 - Update models name in `run_llava.sh` and `run_pope_llava.sh` to use different LLaVA versions.

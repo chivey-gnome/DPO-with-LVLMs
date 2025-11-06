@@ -2,9 +2,9 @@ from .calculator import MetricParser
 import json
 
 class PopeMetricParser(MetricParser):
-    def parse(self, prediction_file, ground_truth_file):
-        answers = [json.loads(q) for q in open(prediction_file, 'r')]
-        label_list = [json.loads(q)['label'] for q in open(ground_truth_file, 'r')]
+    def parse(self, args):
+        answers = [json.loads(q) for q in open(args[0], 'r')]
+        label_list = [json.loads(q)['label'] for q in open(args[1], 'r')]
 
         return (self.parse_answers(answers), self.parse_labels(label_list))
     

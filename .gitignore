@@ -28,7 +28,7 @@ Thumbs.db
 data/
 output/
 coco/
-
+**/image/**
 # Jupyter Notebook files
 .ipynb_checkpoints/
 

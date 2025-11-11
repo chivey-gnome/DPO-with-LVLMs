@@ -4,11 +4,59 @@ import nltk
 from nltk.stem import WordNetLemmatizer
 import os
 import json
+import math
 import spacy
 import warnings
 from tqdm import tqdm
 warnings.filterwarnings("ignore", category=UserWarning)
-        
+
+class DistriminativeMetrics:
+    def __init__(self, name):
+        self.name = name
+        self.tp = 0
+        self.fn = 0
+        self.tn = 0
+        self.fp = 0
+
+    def increment(self, truth, answer):
+        if truth == 'yes':
+            if answer == 'Yes':
+                self.tp += 1
+            else:
+                self.fn += 1
+        else:
+            if answer == 'No':
+                self.tn += 1
+            else:
+                self.fp += 1
+
+    def print(self):
+        print(f"Descriminative Task: {self.name}")
+        print(f"TP\tFP\tTN\tFN\t\n{self.tp}\t{self.fp}\t{self.tn}\t{self.fn}\n")
+        tot = self.tp + self.fp + self.tn + self.fn
+        precision = float(self.tp) / float(self.tp + self.fp)
+        recall = (float(self.tp) / float(self.tp + self.fn)) if not math.isclose(self.tp, 0.0) else 0.0
+        f1 = 2*precision*recall / (precision + recall) if not math.isclose((self.tp + self.fn), 0.0) else 0.0
+        acc = (self.tp + self.tn) / (self.tp + self.tn + self.fp + self.fn) if not math.isclose((self.tp + self.tn + self.fp + self.fn), 0.0) else 0.0
+        yes_ratio = (self.tp + self.fp) / tot
+        print(f"Accuracy: {acc}\nPrecision:{precision}\nRecall: {recall}\nF1 score: {f1}\nYes ratio: {yes_ratio}\n\n")
+
+class AmberMetrics:
+    def __init__(self):
+        self.chair_score = 0
+        self.chair_num = 0
+        self.safe_cover_score = 0
+        self.safe_cover_num = 0
+        self.hallu_cover_score = 0
+        self.hallu_cover_num = 0
+        self.non_hallu_score = 0
+        self.non_hallu_num = 0
+        self.qa_num = 0
+        self.ex = DistriminativeMetrics("Existence")
+        self.pos = DistriminativeMetrics("Positional")
+        self.attr = DistriminativeMetrics("Attribute")
+        self.all = DistriminativeMetrics("All")
+
 '''
 This file is incredibly heavily based on AMBER/inference.py.
 Most code from that file has been adapted here, to fit into
@@ -76,20 +124,7 @@ class AmberMetricParser(MetricParser):
                 self.global_safe_words.append(line)
                 
         # metrics
-        self.metrics = {}
-        self.metrics['chair_score'] = 0
-        self.metrics['chair_num'] = 0
-        self.metrics['safe_cover_score'] = 0
-        self.metrics['safe_cover_num'] = 0
-        self.metrics['hallu_cover_score'] = 0
-        self.metrics['hallu_cover_num'] = 0
-        self.metrics['non_hallu_score'] = 0
-        self.metrics['non_hallu_num'] = 0
-        self.metrics['qa_num'] = 0
-        self.metrics['tp'] = 0
-        self.metrics['fn'] = 0
-        self.metrics['tn'] = 0
-        self.metrics['fp'] = 0
+        self.metrics = AmberMetrics()
 
 
     def parse(self, args):
@@ -174,29 +209,26 @@ class AmberMetricParser(MetricParser):
                 
                     safe_flag_list[idx] = 1
 
-                self.metrics['chair_score'] += sum(safe_flag_list)
-                self.metrics['chair_num'] += len(safe_flag_list)
-                self.metrics['safe_cover_score'] += sum(safe_list[-safe_len:])
-                self.metrics['safe_cover_num'] += len(safe_list[-safe_len:])
-                self.metrics['hallu_cover_score'] += sum(ha_list[-ha_len:])
-                self.metrics['hallu_cover_num'] += len(ha_list[-ha_len:])
+                self.metrics.chair_score += sum(safe_flag_list)
+                self.metrics.chair_num += len(safe_flag_list)
+                self.metrics.safe_cover_score += sum(safe_list[-safe_len:])
+                self.metrics.safe_cover_num += len(safe_list[-safe_len:])
+                self.metrics.hallu_cover_score += sum(ha_list[-ha_len:])
+                self.metrics.hallu_cover_num += len(ha_list[-ha_len:])
                 if sum(safe_flag_list) == 0:
-                    self.metrics['non_hallu_score'] += 1
-                self.metrics['non_hallu_num'] += 1
+                    self.metrics.non_hallu_score += 1
+                self.metrics.non_hallu_num += 1
             
             else:
-                self.metrics['qa_num'] += 1
+                self.metrics.qa_num += 1
                 truth = ground_truth[offset_id]['truth']
                 response = response
-                if truth == 'yes':
-                    if response == 'Yes':
-                        self.metrics['tp'] += 1
-                    else:
-                        self.metrics['fn'] += 1
-                else:
-                    if response == 'No':
-                        self.metrics['tn'] += 1
-                    else:
-                        self.metrics['fp'] += 1
+                self.metrics.all.increment(truth, response)
+                if "discriminative-attribute" in ground_truth[offset_id]['type']:
+                    self.metrics.attr.increment(truth, response)
+                elif "discriminative-hallucination" in ground_truth[offset_id]['type']:
+                    self.metrics.ex.increment(truth, response)
+                elif "relation" in ground_truth[offset_id]['type']:
+                    self.metrics.pos.increment(truth, response)
 
         return self.metrics

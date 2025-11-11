@@ -89,8 +89,8 @@ def format_llava(example, processor):
     # Build chat messages
     # if <image> tag in the description, no need to explicitly add the token in the chat template, since it is already handled by it
     prompt = []
-    if "<image>" not in ["question"]:
-        prompt.append({"role": "user", "content": [{"type": "image"} for _ in images] [{"type": "text", "text": example["question"]}]})
+    if "<image>" not in example["question"]:
+        prompt.append({"role": "user", "content": [{"type": "image"} for _ in images] + [{"type": "text", "text": example["question"]}]})
     else:
         prompt.append({"role": "user", "content": [{"type": "text", "text": example["question"]}]})
         

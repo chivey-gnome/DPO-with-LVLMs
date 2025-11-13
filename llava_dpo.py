@@ -16,7 +16,7 @@ import argparse
 import os
 from PIL import Image
 import torch, transformers
-from datasets import load_dataset, features
+from datasets import load_dataset, features, load_from_disk
 from transformers import AutoModelForVision2Seq, AutoProcessor
 import trl
 from trl import DPOConfig, DPOTrainer
@@ -38,6 +38,7 @@ def parse_args():
 
     parser.add_argument("--dataset_name", type=str, default="Eftekhar/HA-DPO-Dataset",
                         help="Name or path of the dataset to load from Hugging Face Hub.")
+    parser.add_argument("--on_disk_data_set", action="store_true")
     parser.add_argument("--model_name", type=str, default="llava-hf/llava-1.5-7b-hf",
                         help="Pretrained LLaVA model to fine-tune.")
     parser.add_argument("--output_dir", type=str, default="./llava-dpo-output",
@@ -66,12 +67,33 @@ def format_llava(example, processor):
     Returns:
         dict: Processed example with prompt, chosen, rejected, and resized images.
     """
-    # Handle image input (ensure list)
-    images = [example["image"]] if not isinstance(example["image"], list) else example["image"]
+    # Handle image input - the dataset has 'image' column, not 'image_path'
+    # Images are already loaded as PIL Images
+    img = example["image"]
+    
+    # Ensure it's a PIL Image
+    if not isinstance(img, Image.Image):
+        if isinstance(img, str):
+            # Some images may not be PIL by the time it reaches here. There are base64 images and on disk images.
+            if os.path.exists(example["image"]):
+                img = Image.open(example["image"])
+            else:
+                img = Image.open(BytesIO(base64.b64decode(example["image_data"])))
+        if hasattr(img, 'convert'):  # It might be in a different format
+            img = img.convert("RGB")
+        else:
+            raise ValueError(f"Unexpected image type: {type(img)}")
+    
+    images = [img]
 
     # Build chat messages
-    prompt = [{"role": "user", "content": [{"type": "image"} for _ in images] +
-                                         [{"type": "text", "text": example["question"]}]}]
+    # if <image> tag in the description, no need to explicitly add the token in the chat template, since it is already handled by it
+    prompt = []
+    if "<image>" not in example["question"]:
+        prompt.append({"role": "user", "content": [{"type": "image"} for _ in images] + [{"type": "text", "text": example["question"]}]})
+    else:
+        prompt.append({"role": "user", "content": [{"type": "text", "text": example["question"]}]})
+        
     chosen = [{"role": "assistant", "content": [{"type": "text", "text": example["chosen"]}]}]
     rejected = [{"role": "assistant", "content": [{"type": "text", "text": example["rejected"]}]}]
 
@@ -97,7 +119,7 @@ def format_llava(example, processor):
     }
 
 
-def prepare_dataset(dataset_name, processor, num_proc=32):
+def prepare_dataset(dataset_name, processor, num_proc=32, ondisk=False):
     """
     Load and process the dataset for DPO training.
     
@@ -109,7 +131,10 @@ def prepare_dataset(dataset_name, processor, num_proc=32):
     Returns:
         Dataset: Processed dataset ready for training.
     """
-    dataset = load_dataset(dataset_name, split="train")
+    if not ondisk:
+        dataset = load_dataset(dataset_name, split="train")
+    else:
+        dataset = load_from_disk(dataset_name)
 
     dataset = dataset.map(
         lambda ex: format_llava(ex, processor),
@@ -134,7 +159,7 @@ def train(args):
     """
     print("Loading processor and dataset...")
     processor = AutoProcessor.from_pretrained(args.model_name, do_image_splitting=False)
-    dataset = prepare_dataset(args.dataset_name, processor, args.num_proc)
+    dataset = prepare_dataset(args.dataset_name, processor, args.num_proc, args.on_disk_data_set)
     print("==============================================================")
     print("Loading model...")
     model = AutoModelForVision2Seq.from_pretrained(

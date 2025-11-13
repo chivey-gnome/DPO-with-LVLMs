@@ -7,11 +7,13 @@ import json
 import math
 import spacy
 import warnings
+import re
 from tqdm import tqdm
 warnings.filterwarnings("ignore", category=UserWarning)
 
 class DistriminativeMetrics:
-    def __init__(self, name):
+    def __init__(self, name, outfile):
+        self.file = outfile
         self.name = name
         self.tp = 0
         self.fn = 0
@@ -40,9 +42,14 @@ class DistriminativeMetrics:
         acc = (self.tp + self.tn) / (self.tp + self.tn + self.fp + self.fn) if not math.isclose((self.tp + self.tn + self.fp + self.fn), 0.0) else 0.0
         yes_ratio = (self.tp + self.fp) / tot
         print(f"Accuracy: {acc}\nPrecision:{precision}\nRecall: {recall}\nF1 score: {f1}\nYes ratio: {yes_ratio}\n\n")
+        with open(self.file, 'a') as f:
+            f.write(f"Descriminative Task: {self.name}\n")
+            f.write(f"TP\tFP\tTN\tFN\t\n{self.tp}\t{self.fp}\t{self.tn}\t{self.fn}\n")
+            f.write(f"Accuracy: {acc}\nPrecision:{precision}\nRecall: {recall}\nF1 score: {f1}\nYes ratio: {yes_ratio}\n\n")
 
 class AmberMetrics:
-    def __init__(self):
+    def __init__(self, outfile):
+        self.file = outfile
         self.chair_score = 0
         self.chair_num = 0
         self.safe_cover_score = 0
@@ -52,10 +59,12 @@ class AmberMetrics:
         self.non_hallu_score = 0
         self.non_hallu_num = 0
         self.qa_num = 0
-        self.ex = DistriminativeMetrics("Existence")
-        self.pos = DistriminativeMetrics("Positional")
-        self.attr = DistriminativeMetrics("Attribute")
-        self.all = DistriminativeMetrics("All")
+        self.ex = DistriminativeMetrics("Existence", outfile)
+        self.pos = DistriminativeMetrics("Positional", outfile)
+        self.attr = DistriminativeMetrics("Attribute", outfile)
+        self.all = DistriminativeMetrics("All", outfile)
+        with open(self.file, 'w') as f:
+            f.write(f"beginning of log...\n")
 
 '''
 This file is incredibly heavily based on AMBER/inference.py.
@@ -95,7 +104,8 @@ class AmberMetricParser(MetricParser):
     def parse_response(self, text):
         # inference file contains whole chat - prompt, response and tags.
         # Remove these for purposes of AMBER benchmarking 
-        responses = text.split("Assistant: ")
+
+        responses = re.split("Assistant: ", text, flags=re.IGNORECASE)
         if len(responses) >= 2:
             return responses[1]
         else:
@@ -124,7 +134,7 @@ class AmberMetricParser(MetricParser):
                 self.global_safe_words.append(line)
                 
         # metrics
-        self.metrics = AmberMetrics()
+        self.metrics = AmberMetrics(f"{args.model_name}.txt")
 
 
     def parse(self, args):

@@ -7,18 +7,19 @@ This script:
 - Loads POPE benchmark questions
 - Runs inference with images + questions
 - Saves predictions to JSONL
-- Optionally evaluates simple accuracy metrics
+- Evaluates simple accuracy metrics
 """
 
 import argparse
-import os
-import json
-from tqdm import tqdm
-from PIL import Image
 import torch
 from transformers import AutoProcessor, AutoModelForVision2Seq
 from peft import PeftModel
-
+from metrics.pope_calculator import PopeCalculator
+from metrics.amber_calculator import AmberCalculator
+from args.validate_pope import is_pope, validate_pope
+from args.validate_amber import is_amber, validate_amber
+from evaluators.pope_evaluator import PopeEvaluator
+from evaluators.amber_evaluator import AmberEvaluator
 
 def load_model(model_name, dpo_checkpoint=None, device="cuda"):
     """
@@ -40,109 +41,49 @@ def load_model(model_name, dpo_checkpoint=None, device="cuda"):
     model.eval()
     return model.to(device)
 
-
-def evaluate_pope(model, processor, pope_path, coco_path, set_name, type_name, output_dir="./results"):
-    """
-    Run inference on the POPE benchmark dataset.
-    """
-    # Determine dataset file
-    if set_name == "random":
-        questions_file = os.path.join(pope_path, "output/coco/coco_pope_random.json")
-    elif set_name == "popular":
-        questions_file = os.path.join(pope_path, "output/coco/coco_pope_popular.json")
-    elif set_name == "adv":
-        questions_file = os.path.join(pope_path, "output/coco/coco_pope_adversarial.json")
-    else:
-        raise ValueError(f"Unknown set: {set_name}")
-
-    # Load questions
-    with open(questions_file, "r") as f:
-        lines = f.readlines()
-
-    results = []
-    print("==============================================================")
-    for line in tqdm(lines, desc=f"Generating on {set_name}"):
-        data = json.loads(line)
-        question = data["text"]
-        image_name = data["image"]
-        question_id = data["question_id"]
-        label = data["label"]
-
-        # Load image
-        image_path = os.path.join(coco_path, "val2014", image_name)
-        image = Image.open(image_path).convert("RGB")
-
-        # Prepare prompt
-        chat_data = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "image"},
-                    {"type": "text", "text": question}
-                ]
-            }
-        ]
-        prompt = processor.apply_chat_template(chat_data, add_generation_prompt=True)
-
-        # Process inputs
-        inputs = processor(
-            text=prompt,
-            images=[image],
-            return_tensors="pt"
-        ).to("cuda")
-
-        # Generate answer
-        with torch.inference_mode():
-            generated_ids = model.generate(**inputs, max_new_tokens=512)
-        output_text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
-
-        results.append({
-            "question_id": question_id,
-            "question": question,
-            "answer": output_text,
-            "label": label
-        })
-
-    # Save results
-    os.makedirs(output_dir, exist_ok=True)
-    out_file = os.path.join(output_dir, f"pope_{set_name}_{type_name}.jsonl")
-    with open(out_file, "w") as f:
-        for r in results:
-            f.write(json.dumps(r) + "\n")
-
-    print(f"Saved predictions to {out_file}")
-    return results
-
-def main(args):
+def main(args, eval, calc):
 
     print("Loading processor...")
     processor = AutoProcessor.from_pretrained(args.model_name, do_image_splitting=False)
 
     model = load_model(args.model_name, args.dpo_checkpoint)
 
-    results = evaluate_pope(
-        model=model,
-        processor=processor,
-        pope_path=args.pope_path,
-        coco_path=args.coco_path,
-        set_name=args.set_name,
-        type_name=args.model_type,
-        output_dir=args.output_dir
-    )
-    print("Evaluation completed.")
+    results = eval.eval(model, processor)
+    calc.parse(results)
+    print(calc.calculate_results())
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate LLaVA model on POPE benchmark")
     parser.add_argument("--model_type", type=str, help="Which model to evaluate", choices=["base", "dpo"], default="base")
     parser.add_argument("--model_name", type=str, required=True, help="Base model name or path")
     parser.add_argument("--dpo_checkpoint", type=str, default=None, help="Path to DPO adapter checkpoint")
-    parser.add_argument("--pope_path", type=str, required=True, help="Path to POPE dataset folder")
-    parser.add_argument("--coco_path", type=str, required=True, help="Path to COCO images")
+    parser.add_argument("--output_dir", type=str, default="./results", help="Directory to save results")
+    parser.add_argument("--benchmark", type=str, help="How to evaluate the model", choices=["pope", "amber"], default="pope")
+    parser.add_argument("--pope_path", type=str, help="Path to POPE dataset folder")
+    parser.add_argument("--coco_path", type=str, help="Path to COCO images")
     parser.add_argument("--set_name", type=str, default="random", choices=["random", "popular", "adv"],
                         help="Which POPE split to evaluate")
-    
-    parser.add_argument("--output_dir", type=str, default="./results", help="Directory to save results")
+    parser.add_argument("--sim_score", type=float, default=0.8)
+    parser.add_argument("--amber_path", type=str, help="Path to AMBER data", default="data/AMBER")
+    parser.add_argument("--token_output_size", type=int, help="The size of the output, default to 512", default=512)
+    parser.add_argument("--amber_set_name", type=str, default="all", choices=["all", "discriminative", "generative"])
     args = parser.parse_args()
-    main(args)
+
+    # Could split this out to another function
+    if is_pope(args):
+        if validate_pope(args):
+            evaluator = PopeEvaluator(args)
+            calculator = PopeCalculator()
+        else:
+            print("POPE requires the coco_path, pope_path, and set_name arguments set!")
+            exit()
+    if is_amber(args):
+        if validate_amber(args):
+            evaluator = AmberEvaluator(args)
+            calculator = AmberCalculator(args)
+    else:
+        print(f"Unsupported benchmark: {args.benchmark}")
+        exit()
+    main(args, evaluator, calculator)
 
     

@@ -12,3 +12,48 @@ llava-dpo-1.5/
 # --- Evaluation and logs ---
 *.log
 *.txt
+# Byte-code files
+*.pyc
+__pycache__/
+
+# Virtual environments
+.env/
+venv/
+env/
+.venv/
+
+# PyTorch specific
+checkpoints/
+runs/
+logs/
+tb_logs/ # TensorBoard logs
+*.pt # PyTorch model files (e.g., saved weights)
+*.pth # PyTorch model files (e.g., saved weights)
+
+# IDE specific files
+.idea/
+.vscode/
+
+# Operating System files
+.DS_Store
+Thumbs.db
+
+# Data files (if not intended for version control)
+data/
+output/
+coco/
+**/image/**
+# Jupyter Notebook files
+.ipynb_checkpoints/
+
+# Pipenv
+Pipfile.lock # Uncomment if you don't want to track Pipfile.lock (generally recommended to track)
+
+# Poetry
+poetry.lock # Uncomment if you don't want to track poetry.lock (generally recommended to track)
+
+# Build artifacts
+dist/
+build/
+/*-dpo-*
+/results

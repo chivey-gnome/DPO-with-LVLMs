@@ -38,7 +38,7 @@ class DistriminativeMetrics:
         tot = self.tp + self.fp + self.tn + self.fn
         precision = float(self.tp) / float(self.tp + self.fp)
         recall = (float(self.tp) / float(self.tp + self.fn)) if not math.isclose(self.tp, 0.0) else 0.0
-        f1 = 2*precision*recall / (precision + recall) if not math.isclose((self.tp + self.fn), 0.0) else 0.0
+        f1 = 2*precision*recall / (precision + recall) if not math.isclose((precision + recall), 0.0) else 0.0
         acc = (self.tp + self.tn) / (self.tp + self.tn + self.fp + self.fn) if not math.isclose((self.tp + self.tn + self.fp + self.fn), 0.0) else 0.0
         yes_ratio = (self.tp + self.fp) / tot
         print(f"Accuracy: {acc}\nPrecision:{precision}\nRecall: {recall}\nF1 score: {f1}\nYes ratio: {yes_ratio}\n\n")

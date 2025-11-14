@@ -134,7 +134,10 @@ class AmberMetricParser(MetricParser):
                 self.global_safe_words.append(line)
                 
         # metrics
-        filename =args.dpo_checkpoint.split('/')[0]
+        if args.model_type == 'dpo':
+            filename =args.dpo_checkpoint.split('/')[0]
+        else:
+            filename = 'base'
         self.metrics = AmberMetrics(f"{filename}.txt")
 
 

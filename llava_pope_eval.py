@@ -77,7 +77,7 @@ if __name__ == "__main__":
         else:
             print("POPE requires the coco_path, pope_path, and set_name arguments set!")
             exit()
-    if is_amber(args):
+    elif is_amber(args):
         if validate_amber(args):
             evaluator = AmberEvaluator(args)
             calculator = AmberCalculator(args)

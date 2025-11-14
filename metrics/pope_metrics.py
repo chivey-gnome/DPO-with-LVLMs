@@ -3,8 +3,8 @@ import json
 
 class PopeMetricParser(MetricParser):
     def parse(self, args):
-        answers = [json.loads(q) for q in open(args[0], 'r')]
-        label_list = [json.loads(q)['label'] for q in open(args[1], 'r')]
+        answers = [json.loads(q) for q in open(args[1], 'r')]
+        label_list = [json.loads(q)['label'] for q in open(args[0], 'r')]
 
         return (self.parse_answers(answers), self.parse_labels(label_list))
     

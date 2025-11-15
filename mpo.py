@@ -25,6 +25,8 @@ from trl import DPOConfig, DPOTrainer
 import peft
 from peft import LoraConfig
 import tensorboard
+import base64
+from io import BytesIO
 
 print("TRL version:", trl.__version__)
 print("PEFT version:", peft.__version__)

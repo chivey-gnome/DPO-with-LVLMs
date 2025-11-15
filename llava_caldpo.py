@@ -73,18 +73,39 @@ def format_llava(example, processor):
     # Images are already loaded as PIL Images
     img = example["image"]
     
-    # Ensure it's a PIL Image
+   
+    # Ensure img is a PIL Image
     if not isinstance(img, Image.Image):
-        if hasattr(img, 'convert'):  # It might be in a different format
+
+        # Case 1: img is a path or base64 string
+        if isinstance(img, str):
+            # On-disk image
+            if os.path.exists(img):
+                img = Image.open(img)
+            else:
+                # Base64 image
+                img = Image.open(BytesIO(base64.b64decode(img)))
+
+        # Case 2: img is some other image-like object
+        elif hasattr(img, "convert"):
             img = img.convert("RGB")
+
         else:
             raise ValueError(f"Unexpected image type: {type(img)}")
+
+    # Finally ensure RGB after converting/loading
+    if img.mode != "RGB":
+        img = img.convert("RGB")
     
     images = [img]
 
     # Build chat messages
-    prompt = [{"role": "user", "content": [{"type": "image"} for _ in images] +
-                                         [{"type": "text", "text": example["question"]}]}]
+    # if <image> tag in the description, no need to explicitly add the token in the chat template, since it is already handled by it
+    prompt = []
+    if "<image>" not in example["question"]:
+        prompt.append({"role": "user", "content": [{"type": "image"} for _ in images] + [{"type": "text", "text": example["question"]}]})
+    else:
+        prompt.append({"role": "user", "content": [{"type": "text", "text": example["question"]}]})
     chosen = [{"role": "assistant", "content": [{"type": "text", "text": example["chosen"]}]}]
     rejected = [{"role": "assistant", "content": [{"type": "text", "text": example["rejected"]}]}]
 

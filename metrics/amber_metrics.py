@@ -66,6 +66,22 @@ class AmberMetrics:
         with open(self.file, 'w') as f:
             f.write(f"beginning of log...\n")
 
+    def print(self):
+        CHAIR = round(self.chair_score / self.chair_num * 100, 1)
+        Cover = round(self.safe_cover_score / self.safe_cover_num * 100, 1)
+        Ha = round(self.hallu_cover_score / self.hallu_cover_num * 100, 1)
+        Ha_p = round(100 - self.non_hallu_score / self.non_hallu_num * 100, 1)
+        print("Generative Task:")
+        print("CHAIR:\t\t", CHAIR)
+        print("Cover:\t\t", Cover)
+        print("Hal:\t\t", Ha_p)
+        print("Cog:\t\t", Ha, "\n")
+        with open(self.file, 'a') as f:
+            f.write("Generative Task:\n")
+            f.write(f"CHAIR:\t\t{CHAIR}\n")
+            f.write(f"Cover:\t\t{Cover}\n")
+            f.write(f"Hal:\t\t{Ha_p}\n")
+            f.write(f"Cog:\t\t{Ha}\n")
 '''
 This file is incredibly heavily based on AMBER/inference.py.
 Most code from that file has been adapted here, to fit into
@@ -134,7 +150,10 @@ class AmberMetricParser(MetricParser):
                 self.global_safe_words.append(line)
                 
         # metrics
-        filename =args.dpo_checkpoint.split('/')[0]
+        if args.model_type == 'dpo':
+            filename =args.dpo_checkpoint.split('/')[0]
+        else:
+            filename = 'base'
         self.metrics = AmberMetrics(f"{filename}.txt")
 
 

@@ -19,15 +19,7 @@ class AmberCalculator(calculator):
 
     def calculate_results(self):
         if self.parse_results.chair_num != 0:
-            CHAIR = round(self.parse_results.chair_score / self.parse_results.chair_num * 100, 1)
-            Cover = round(self.parse_results.safe_cover_score / self.parse_results.safe_cover_num * 100, 1)
-            Ha = round(self.parse_results.hallu_cover_score / self.parse_results.hallu_cover_num * 100, 1)
-            Ha_p = round(100 - self.parse_results.non_hallu_score / self.parse_results.non_hallu_num * 100, 1)
-            print("Generative Task:")
-            print("CHAIR:\t\t", CHAIR)
-            print("Cover:\t\t", Cover)
-            print("Hal:\t\t", Ha_p)
-            print("Cog:\t\t", Ha, "\n")
+            self.parse_results.print()
         
         if self.parse_results.qa_num != 0:
             self.parse_results.all.print()

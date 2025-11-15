@@ -86,7 +86,7 @@ def format_llava(example, processor):
                 img = Image.open(img)
             else:
                 # Base64 image
-                img = Image.open(BytesIO(base64.b64decode(example["image_bytes"])))
+                img = Image.open(BytesIO(base64.b64decode(example["image_data"])))
 
         # Case 2: img is some other image-like object
         elif hasattr(img, "convert"):

@@ -57,3 +57,9 @@ dist/
 build/
 /*-dpo-*
 /results
+
+# Eftekhar
+llava-dpo-1.5-RLAIF-V/
+paligemma/paligemma-hadpo/
+paligemma/saved_models/
+
